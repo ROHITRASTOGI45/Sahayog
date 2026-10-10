@@ -1,0 +1,15 @@
+import { Router } from "express";
+import { loginCustomer, registerCustomer, logoutCustomer, getCustomerProfile, getProfessionalProfile, listSavedProfessionals, saveProfessional, removeSavedProfessional } from "./customer.controller.js";
+import { verifyCustomerJWT } from "../../shared/middleware/auth.middleware.js";
+import { multerStorage } from "../../shared/middleware/upload.middleware.js";
+import { rateLimit } from "../../shared/middleware/rate-limit.middleware.js";
+const router = Router();
+router.post("/register", rateLimit({ max: 8 }), multerStorage.single("profilePhoto"), registerCustomer);
+router.post("/login", rateLimit({ max: 10 }), loginCustomer);
+router.post("/logout", verifyCustomerJWT, logoutCustomer);
+router.get("/me", verifyCustomerJWT, getCustomerProfile);
+router.get("/professionals/:workerId/profile", verifyCustomerJWT, getProfessionalProfile);
+router.get("/saved-professionals", verifyCustomerJWT, listSavedProfessionals);
+router.post("/saved-professionals/:workerId", verifyCustomerJWT, saveProfessional);
+router.delete("/saved-professionals/:workerId", verifyCustomerJWT, removeSavedProfessional);
+export default router;

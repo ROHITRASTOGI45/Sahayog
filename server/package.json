@@ -1,0 +1,39 @@
+{
+  "name": "sahayog-integrated-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Express and MongoDB API for customer requests, worker matching, notifications, and real-time updates.",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "test": "node tests/smokeTest.js",
+    "db:migrate-legacy-workers": "node src/scripts/migrate-legacy-workers.js",
+    "db:seed-demo-worker": "node src/scripts/seed-demo-worker.js",
+    "db:prepare-legacy-notification-worker": "node src/scripts/prepare-legacy-notification-worker.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cloudinary": "^2.11.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "firebase-admin": "^14.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.9.4",
+    "multer": "^2.3.0",
+    "nodemailer": "^10.0.0",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

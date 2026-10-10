@@ -1,0 +1,22 @@
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+import { Worker } from "../modules/workers/worker.model.js";
+dotenv.config({ path: "./.env" });
+const run = async () => {
+  const [id, latitude, longitude] = process.argv.slice(2);
+  if (!mongoose.isValidObjectId(id) || ![Number(latitude), Number(longitude)].every(Number.isFinite)) throw new Error("Usage: npm run db:prepare-legacy-notification-worker -- WORKER_ID LATITUDE LONGITUDE");
+  await mongoose.connect(process.env.MONGO_URI);
+  const worker = await Worker.findById(id);
+  if (!worker) throw new Error("Worker not found");
+  const service = worker.service || worker.skills?.[0]?.service || "Plumbing";
+  worker.fullName = worker.fullName || worker.name || "Legacy Worker";
+  worker.service = service;
+  worker.skills = worker.skills?.length ? worker.skills : [{ service, experienceYears: Number(worker.experienceYears || 0), skillLevel: worker.skillLevel === "ADVANCED" ? "EXPERT" : (worker.skillLevel || "BEGINNER") }];
+  worker.currentLocation = { type: "Point", coordinates: [Number(longitude), Number(latitude)] };
+  worker.isActive = true;
+  worker.status = "AVAILABLE";
+  await worker.save({ validateBeforeSave: false });
+  console.log({ workerId: worker._id.toString(), fcmTokens: worker.fcmTokens.length, service, currentLocation: worker.currentLocation, status: worker.status });
+  await mongoose.disconnect();
+};
+run().catch(async e => { console.error(e.message); await mongoose.disconnect(); process.exit(1); });

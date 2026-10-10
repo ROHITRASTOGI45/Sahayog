@@ -1,0 +1,11 @@
+import express from "express";
+import { verifyWorkerJWT } from "../../shared/middleware/auth.middleware.js";
+import { requireWorker } from "../../shared/middleware/role.middleware.js";
+import { registerDevice, unregisterDevice, listWorkerNotifications, markNotificationRead } from "./notification.controller.js";
+const router = express.Router();
+router.use(verifyWorkerJWT, requireWorker);
+router.post("/register-device", registerDevice);
+router.post("/unregister-device", unregisterDevice);
+router.get("/mine", listWorkerNotifications);
+router.patch("/:id/read", markNotificationRead);
+export default router;
