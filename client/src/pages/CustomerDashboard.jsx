@@ -1240,10 +1240,10 @@ export default function CustomerDashboard({
 
   return (
     <main className="min-h-screen bg-[#f6faf8] text-[#173b32]" style={{ "--sidebar-space": sidebarOpen ? "16rem" : "5rem" }}>
-      <aside className={`fixed left-0 top-0 z-30 hidden h-screen border-r border-[#dcebe4] bg-white p-4 transition-[width] duration-200 lg:block ${sidebarOpen ? "w-64" : "w-20"}`}>
+      <aside className={`fixed left-0 top-0 z-30 hidden h-screen bg-white p-4 transition-[width] duration-200 lg:block ${sidebarOpen ? "w-64" : "w-20"}`}>
         <div className={`flex items-center border-b border-slate-100 pb-5 ${sidebarOpen ? "justify-between gap-3" : "justify-center"}`}>
           {sidebarOpen && <div className="flex items-center gap-3"><img src={logo} alt="Sahayog" className="h-10 w-10" /><div><p className="font-black text-[#12345b]">Sahayog</p><p className="text-xs text-slate-500">Customer</p></div></div>}
-          <button type="button" onClick={() => setSidebarOpen((value) => !value)} aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"} title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-[#fff3e8] hover:text-[#e67e22]"><span className="sr-only">{sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}</span>{sidebarOpen ? <PanelLeftClose size={19}/> : <PanelLeftOpen size={19}/>}</button>
+          <button type="button" onClick={() => setSidebarOpen((value) => !value)} aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"} title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-[#eaf8f1] hover:text-[#07865b]"><span className="sr-only">{sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}</span>{sidebarOpen ? <PanelLeftClose size={19}/> : <PanelLeftOpen size={19}/>}</button>
         </div>
         <nav className="mt-6 space-y-2">
           {[
@@ -1252,7 +1252,9 @@ export default function CustomerDashboard({
             ["saved", "Saved Professionals", Heart],
             ["profile", "Profile & Settings", UserRound],
             ["help", "Help & Support", HelpCircle],
-          ].map(([key, label, Icon]) => <button key={key} type="button" onClick={() => { setSidebarPanel(key); if (key === "saved") loadSavedProfessionals(); window.scrollTo({ top: 0, behavior: "smooth" }); }} title={!sidebarOpen ? label : undefined} className={`flex w-full items-center rounded-xl py-3 text-sm font-extrabold transition ${sidebarOpen ? "gap-3 px-4" : "justify-center px-2"} ${sidebarPanel === key ? "border border-[#f2c49e] bg-[#fff3e8] text-[#e67e22]" : "text-slate-600 hover:bg-[#fff3e8] hover:text-[#cf6814]"}`}><Icon size={18}/>{sidebarOpen && <span>{label}</span>}</button>)}
+          ].map(([key, label, Icon]) => <button key={key} type="button" onClick={() => { setSidebarPanel(key); if (key === "saved") loadSavedProfessionals(); window.scrollTo({ top: 0, behavior: "smooth" }); }} title={!sidebarOpen ? label : undefined} className={`flex w-full items-center rounded-xl py-3 text-sm font-extrabold transition ${sidebarOpen ? "gap-3 px-4" : "justify-center px-2"} ${sidebarPanel === key
+  ? "border border-[#a7dfc5] bg-[#eaf8f1] text-[#07865b]"
+  : "text-slate-600 hover:bg-[#eaf8f1] hover:text-[#07865b]"}`}><Icon size={18}/>{sidebarOpen && <span>{label}</span>}</button>)}
         </nav>
       </aside>
 
