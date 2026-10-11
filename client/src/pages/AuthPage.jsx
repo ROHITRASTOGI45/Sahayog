@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../lib/api";
 import logo from "../assets/logo.png";
@@ -13,6 +13,29 @@ import {
   MapPin,
 } from "lucide-react";
 
+function AuthSubmitButton({ loading, loadingText, icon, className, children }) {
+  return (
+    <button
+      type="submit"
+      disabled={loading}
+      aria-busy={loading}
+      className={`${className} disabled:cursor-not-allowed disabled:opacity-80`}
+    >
+      {loading ? (
+        <>
+          <span
+            aria-hidden="true"
+            className="inline-block h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none"
+          />
+          <span role="status" aria-live="polite">{loadingText}</span>
+        </>
+      ) : (
+        <>{icon}{children}</>
+      )}
+    </button>
+  );
+}
+
 function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuthMode = null, onRouteChange }) {
 
   // AUTHENTICATION UI STATE
@@ -21,6 +44,20 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
   const [selectedRole, setSelectedRole] = useState(initialRole);
   const [authMode, setAuthMode] = useState(initialAuthMode);
   const [registrationSuccess, setRegistrationSuccess] = useState(null);
+  const [loadingActions, setLoadingActions] = useState({});
+  const submissionLocks = useRef(new Set());
+
+  const beginSubmission = (action) => {
+    if (submissionLocks.current.has(action)) return false;
+    submissionLocks.current.add(action);
+    setLoadingActions((previous) => ({ ...previous, [action]: true }));
+    return true;
+  };
+
+  const endSubmission = (action) => {
+    submissionLocks.current.delete(action);
+    setLoadingActions((previous) => ({ ...previous, [action]: false }));
+  };
 
   // CUSTOMER REGISTRATION FORM STATE
 
@@ -209,11 +246,14 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
   const handleCooperativeLoginSubmit = async (event) => {
     event.preventDefault();
     if (!cooperativeLogin.email || !cooperativeLogin.password) return alert("Please enter your email and password.");
+    if (!beginSubmission("cooperativeLogin")) return;
     try {
       const data = await api("/cooperative-admin/login", { method: "POST", body: JSON.stringify(cooperativeLogin) });
       onAuthenticated("cooperative", data.data.cooperativeAdmin);
     } catch (error) {
       alert(error.message);
+    } finally {
+      endSubmission("cooperativeLogin");
     }
   };
 
@@ -223,6 +263,7 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
     if (required.some((value) => !String(value || "").trim())) return alert("Please fill all required fields.");
     if (cooperativeForm.password !== cooperativeForm.confirmPassword) return alert("Passwords do not match.");
     if (cooperativeForm.latitude === null || cooperativeForm.longitude === null) return alert("Please use Current Location. Cooperative location is required.");
+    if (!beginSubmission("cooperativeRegister")) return;
     try {
       const form = new FormData();
       form.append("cooperative", JSON.stringify({
@@ -245,6 +286,8 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
       });
     } catch (error) {
       alert(error.message);
+    } finally {
+      endSubmission("cooperativeRegister");
     }
   };
 
@@ -358,6 +401,7 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
     if (workerForm.registrationLatitude === null || workerForm.registrationLongitude === null) return alert("Please use Detect Registration Area. This location is required to identify cooperatives in your area.");
     if (!Object.keys(workerServices).length) return alert("Please select at least one service.");
     if (Object.values(workerServices).some((d) => d.experience === "")) return alert("Please enter experience for every selected service.");
+    if (!beginSubmission("workerRegister")) return;
     try {
       const form = new FormData();
       form.append("fullName", workerForm.fullName); form.append("email", workerForm.email); form.append("phone", workerForm.phoneNumber); form.append("password", workerForm.password);
@@ -379,13 +423,16 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
         message: data.message || "Your worker account has been created successfully.",
       });
     } catch (error) { alert(error.message); }
+    finally { endSubmission("workerRegister"); }
   };
 
   const handleWorkerLoginSubmit = async (event) => {
     event.preventDefault();
     if (!workerLogin.email || !workerLogin.password) return alert("Please enter your email and password.");
+    if (!beginSubmission("workerLogin")) return;
     try { const data = await api("/workers/login", { method: "POST", body: JSON.stringify(workerLogin) }); onAuthenticated("worker", data.data.worker); }
     catch (error) { alert(error.message); }
+    finally { endSubmission("workerLogin"); }
   };
 
   // Return from a Login/Register form to the Login/Register choice.
@@ -425,8 +472,11 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
   // ------------------------------------------------------------
   const handleCustomerLoginSubmit = async (event) => {
     event.preventDefault();
+    if (!customerLogin.email || !customerLogin.password) return alert("Please enter your email and password.");
+    if (!beginSubmission("customerLogin")) return;
     try { const data = await api("/customers/login", { method: "POST", body: JSON.stringify(customerLogin) }); onAuthenticated("customer", data.data.customer); }
     catch (error) { alert(error.message); }
+    finally { endSubmission("customerLogin"); }
   };
 
   // ------------------------------------------------------------
@@ -445,6 +495,7 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
   const handleCustomerSubmit = async (event) => {
     event.preventDefault();
     if (customerForm.password !== customerForm.confirmPassword) return alert("Password and Confirm Password must match.");
+    if (!beginSubmission("customerRegister")) return;
     try {
       const form = new FormData();
       form.append("fullname", customerForm.fullName);
@@ -460,6 +511,7 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
         message: data.message || "Your customer account has been created successfully.",
       });
     } catch (error) { alert(error.message); }
+    finally { endSubmission("customerRegister"); }
   };
 
   const closeRegistrationSuccess = () => {
@@ -720,7 +772,7 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
                     </p>
                   </div>
 
-                  <form onSubmit={handleCustomerSubmit}>
+                  <form onSubmit={handleCustomerSubmit} aria-busy={Boolean(loadingActions.customerRegister)}>
 
                     {/* ================= PERSONAL DETAILS ================= */}
                     <section>
@@ -945,12 +997,9 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
 
                     {/* ================= SUBMIT ================= */}
                     <div className="mt-10 border-t border-[#e6edf1] pt-8">
-                      <button
-                        type="submit"
-                        className="w-full rounded-2xl bg-[#e67e22] px-6 py-4 font-semibold text-white shadow-lg shadow-[#e67e22]/20 transition duration-300 hover:-translate-y-1 hover:bg-[#d96f16]"
-                      >
+                      <AuthSubmitButton loading={Boolean(loadingActions.customerRegister)} loadingText="Creating account..." icon={<UserPlus size={19} />} className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#e67e22] px-6 py-4 font-semibold text-white shadow-lg shadow-[#e67e22]/20 transition duration-300 hover:-translate-y-1 hover:bg-[#d96f16]">
                         Create Customer Account
-                      </button>
+                      </AuthSubmitButton>
 
                       <p className="mt-4 text-center text-xs leading-5 text-[#526b86]">
                         By continuing, the entered information will be prepared
@@ -1002,6 +1051,7 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
                 {/* ================= LOGIN FORM ================= */}
                 <form
                   onSubmit={handleCustomerLoginSubmit}
+                  aria-busy={Boolean(loadingActions.customerLogin)}
                   className="mt-10"
                 >
                   {/* Email */}
@@ -1041,13 +1091,9 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
                   </div>
 
                   {/* Login button */}
-                  <button
-                    type="submit"
-                    className="mt-8 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#e67e22] px-6 py-4 font-semibold text-white shadow-lg shadow-[#e67e22]/20 transition duration-300 hover:-translate-y-1 hover:bg-[#d96f16]"
-                  >
-                    <LogIn size={19} />
+                  <AuthSubmitButton loading={Boolean(loadingActions.customerLogin)} loadingText="Signing in..." icon={<LogIn size={19} />} className="mt-8 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#e67e22] px-6 py-4 font-semibold text-white shadow-lg shadow-[#e67e22]/20 transition duration-300 hover:-translate-y-1 hover:bg-[#d96f16]">
                     Login as Customer
-                  </button>
+                  </AuthSubmitButton>
 
                   <p className="mt-4 text-center text-xs leading-5 text-[#526b86]">
                     Securely sign in to your Sahayog account.
@@ -1074,6 +1120,7 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
                 {selectedRole === "worker" ? (
                   <form
                     onSubmit={handleWorkerLoginSubmit}
+                    aria-busy={Boolean(loadingActions.workerLogin)}
                     className="rounded-3xl border border-[#dce7ef] bg-white p-8 shadow-xl shadow-[#12345b]/5 sm:p-12"
                   >
                     <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#e67e22]">
@@ -1109,20 +1156,16 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
                       />
                     </div>
 
-                    <button
-                      type="submit"
-                      className="mt-8 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#e67e22] px-6 py-4 font-semibold text-white shadow-lg shadow-[#e67e22]/20 transition duration-300 hover:-translate-y-1 hover:bg-[#d96f16]"
-                    >
-                      <LogIn size={19} />
+                    <AuthSubmitButton loading={Boolean(loadingActions.workerLogin)} loadingText="Signing in..." icon={<LogIn size={19} />} className="mt-8 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#e67e22] px-6 py-4 font-semibold text-white shadow-lg shadow-[#e67e22]/20 transition duration-300 hover:-translate-y-1 hover:bg-[#d96f16]">
                       Login as Worker
-                    </button>
+                    </AuthSubmitButton>
 
                     <p className="mt-4 text-center text-xs leading-5 text-[#526b86]">
                       Securely sign in to your Sahayog account.
                     </p>
                   </form>
                 ) : (
-                  <form onSubmit={handleCooperativeLoginSubmit} className="rounded-3xl border border-[#dce7ef] bg-white p-8 shadow-xl shadow-[#12345b]/5 sm:p-12">
+                  <form onSubmit={handleCooperativeLoginSubmit} aria-busy={Boolean(loadingActions.cooperativeLogin)} className="rounded-3xl border border-[#dce7ef] bg-white p-8 shadow-xl shadow-[#12345b]/5 sm:p-12">
                     <div className="text-center">
                       <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#12345b]">Cooperative Owner</p>
                       <h2 className="mt-3 text-3xl font-bold text-[#12345b]">Welcome back</h2>
@@ -1132,9 +1175,9 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
                       <input name="email" type="email" value={cooperativeLogin.email} onChange={handleCooperativeLoginChange} placeholder="Admin email *" required className="auth-input" />
                       <input name="password" type="password" value={cooperativeLogin.password} onChange={handleCooperativeLoginChange} placeholder="Password *" required className="auth-input" />
                     </div>
-                    <button type="submit" className="mt-8 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#12345b] px-6 py-4 font-semibold text-white shadow-lg transition hover:-translate-y-1 hover:bg-[#0d2948]">
-                      <LogIn size={19} /> Login as Cooperative Owner
-                    </button>
+                    <AuthSubmitButton loading={Boolean(loadingActions.cooperativeLogin)} loadingText="Signing in..." icon={<LogIn size={19} />} className="mt-8 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#12345b] px-6 py-4 font-semibold text-white shadow-lg transition hover:-translate-y-1 hover:bg-[#0d2948]">
+                      Login as Cooperative Owner
+                    </AuthSubmitButton>
                   </form>
                 )}
               </div>
@@ -1157,6 +1200,7 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
                 {selectedRole === "worker" ? (
                   <form
                     onSubmit={handleWorkerRegister}
+                    aria-busy={Boolean(loadingActions.workerRegister)}
                     className="rounded-3xl border border-[#dce7ef] bg-white p-8 shadow-xl shadow-[#12345b]/5 sm:p-10"
                   >
                     <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#e67e22]">
@@ -1489,13 +1533,9 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
                       </div>
                     </div>
 
-                    <button
-                      type="submit"
-                      className="mt-8 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#e67e22] px-6 py-4 font-semibold text-white shadow-lg shadow-[#e67e22]/20 transition duration-300 hover:-translate-y-1 hover:bg-[#d96f16]"
-                    >
-                      <UserPlus size={19} />
+                    <AuthSubmitButton loading={Boolean(loadingActions.workerRegister)} loadingText="Creating worker account..." icon={<UserPlus size={19} />} className="mt-8 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#e67e22] px-6 py-4 font-semibold text-white shadow-lg shadow-[#e67e22]/20 transition duration-300 hover:-translate-y-1 hover:bg-[#d96f16]">
                       Register as Worker
-                    </button>
+                    </AuthSubmitButton>
 
                     {/* TODO BACKEND:
                         Connect this form to the worker registration API.
@@ -1504,7 +1544,7 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
                         WorkerProfile. */}
                   </form>
                 ) : (
-                  <form onSubmit={handleCooperativeRegister} className="rounded-3xl border border-[#dce7ef] bg-white p-8 shadow-xl shadow-[#12345b]/5 sm:p-10">
+                  <form onSubmit={handleCooperativeRegister} aria-busy={Boolean(loadingActions.cooperativeRegister)} className="rounded-3xl border border-[#dce7ef] bg-white p-8 shadow-xl shadow-[#12345b]/5 sm:p-10">
                     <div className="text-center">
                       <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#12345b]">Cooperative Owner</p>
                       <h2 className="mt-3 text-3xl font-bold text-[#12345b]">Create your cooperative</h2>
@@ -1551,7 +1591,9 @@ function AuthPage({ onBackHome, onAuthenticated, initialRole = null, initialAuth
                     </div>
                     <button type="button" onClick={handleCooperativeLocation} className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[#16845f]/30 px-4 py-3 text-sm font-bold text-[#16845f] hover:bg-[#16845f]/5"><MapPin size={17} /> Use Current Location</button>
                     {cooperativeLocationStatus && <p className="mt-3 text-sm text-[#526b86]">{cooperativeLocationStatus}</p>}
-                    <button type="submit" className="mt-8 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#12345b] px-6 py-4 font-semibold text-white shadow-lg transition hover:-translate-y-1 hover:bg-[#0d2948]"><UserPlus size={19} /> Register Cooperative</button>
+                    <AuthSubmitButton loading={Boolean(loadingActions.cooperativeRegister)} loadingText="Creating cooperative account..." icon={<UserPlus size={19} />} className="mt-8 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#12345b] px-6 py-4 font-semibold text-white shadow-lg transition hover:-translate-y-1 hover:bg-[#0d2948]">
+                      Register Cooperative
+                    </AuthSubmitButton>
                   </form>
                 )}
               </div>
