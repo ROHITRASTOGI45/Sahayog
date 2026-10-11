@@ -538,7 +538,7 @@ const currentWorker = workers[workerIndex];
       <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
 
         <a
-          href="https://github.com/suyash-jaiswal-7/Sahayog"
+          href="https://github.com/ROHITRASTOGI45/Sahayog"
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-xl border border-white/30 px-7 py-3.5 font-semibold text-white transition hover:-translate-y-0.5 hover:bg-white/10"
