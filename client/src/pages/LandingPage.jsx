@@ -590,13 +590,6 @@ const currentWorker = workers[workerIndex];
       </a>
 
       <a
-        href="#team"
-        className="transition hover:text-[#16845f]"
-      >
-        {isHindi ? "टीम" : "Team"}
-      </a>
-
-      <a
         href="https://github.com/suyash-jaiswal-7/Sahayog"
         target="_blank"
         rel="noopener noreferrer"
